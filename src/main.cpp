@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <Python.h>
+#include "../header/Image.hpp"
 
 /**
  * Receives the following arguments:
@@ -40,6 +41,12 @@ int main(int argc, char *argv[])
 
     // Clean up the Python environment
     Py_Finalize();
+
+    Image img("temp.txt");
+    if (img.loading_failed()){
+
+    }
+    else img.show_image();
 
     return 0;
 }
