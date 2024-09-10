@@ -16,7 +16,7 @@ OBJS = $(SRCS:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 TARGET = prog
 
 # Default rule
-all: $(TARGET)
+all: $(BUILD_DIR) $(TARGET)
 
 # Link object files to create the executable
 $(TARGET): $(OBJS)
@@ -24,8 +24,11 @@ $(TARGET): $(OBJS)
 
 # Rule to create object files from source files
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
-	mkdir -p $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Rule to create build directory if it does not exist
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
 
 # Clean up build artifacts
 clean:

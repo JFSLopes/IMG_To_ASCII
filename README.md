@@ -1,0 +1,1 @@
+- The bit map will be stored in a file in output/ with the same name has the image selected

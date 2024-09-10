@@ -31,6 +31,8 @@ Image::~Image(){
 
         delete [] pix_map;
     }
+
+    delete [] grayscale;
 }
 
 bool Image::read_dimensions(std::ifstream& in){
@@ -54,14 +56,30 @@ bool Image::read_pix_map(std::ifstream& in){
 }
 
 bool Image::allocate_pix_map(){
-    pix_map = new Pixel*[w];
+    pix_map = new Pixel*[h];
     if (pix_map == nullptr) {
         return false; 
     }
 
-    for (uint16_t l = 0; l < w; l++){
-        pix_map[l] = new Pixel[h];
+    for (uint16_t l = 0; l < h; l++){
+        pix_map[l] = new Pixel[w];
         if (pix_map[l] == nullptr) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool Image::allocate_grayscale(){
+    grayscale = new uint8_t*[h];
+    if (grayscale == nullptr){
+        return false;
+    }
+
+    for (uint16_t l = 0; l < h; l++){
+        grayscale[l] = new uint8_t[w];
+        if (grayscale[l] == nullptr) {
             return false;
         }
     }
@@ -73,12 +91,19 @@ void Image::read_file(){
     std::ifstream in(file);
 
     if (!in.is_open()){
-        flag_error = false;
+        flag_error = true;
         return;
     }
 
     if (!read_dimensions(in) or !allocate_pix_map() or !read_pix_map(in)){
-        flag_error = false;
+        flag_error = true;
+        return;
+    }
+
+    if (allocate_grayscale()){
+        make_image_grayscale_NTSC();
+    } else {
+        flag_error = true;
     }
     
     in.close();
@@ -88,7 +113,7 @@ void Image::show_image() const{
     std::cout << "Width: " << w << "    Heigth: " << h << "\n";
     for (uint16_t l = 0; l < h; l++){
         for (uint16_t c = 0; c < w; c++){
-            std::cout << pix_map[l][c] << " ";
+            std::cout << (uint16_t)grayscale[l][c] << " ";
         }
         std::cout << "\n";
     }
@@ -96,4 +121,31 @@ void Image::show_image() const{
 
 bool Image::loading_failed() const{
     return flag_error;
+}
+
+void Image::make_image_grayscale_NTSC(){
+    for (uint16_t l = 0; l < h; l++){
+        for (uint16_t c = 0; c < w; c++){
+            uint8_t value = (float) pix_map[l][c].r * 0.299 + (float) pix_map[l][c].g * 0.587 + (float) pix_map[l][c].b * 0.114;
+            grayscale[l][c] = value;
+        }
+    }
+}
+
+bool Image::save_grayscale(const std::string& file_path) const{
+    std::ofstream os(file_path);
+
+    if (!os.is_open()){
+        return false;
+    }
+
+    for (uint16_t l = 0; l < h; l++){
+        for (uint16_t c = 0; c < w; c++){
+            os << (uint16_t) grayscale[l][c];
+            if (c != w - 1) os << ",";
+        }
+        os << "\n";
+    }
+    os.close();
+    return true;
 }

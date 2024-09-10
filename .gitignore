@@ -2,3 +2,4 @@ build/
 prog
 *.txt
 prog.dSYM
+*.csv
