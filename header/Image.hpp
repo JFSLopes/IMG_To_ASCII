@@ -27,13 +27,13 @@ private:
     bool read_dimensions(std::ifstream& in);
     bool read_pix_map(std::ifstream& in);
     bool allocate_pix_map();
+    void read_file();
 
 public:
     Image(const std::string& file);
     ~Image();
 
     bool loading_failed() const;
-    void read_file();
     void show_image() const;
 };
 
