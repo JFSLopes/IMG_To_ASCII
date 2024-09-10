@@ -3,6 +3,19 @@
 #include <stdio.h>
 #include <Python.h>
 
+std::string ASCII_Render::swap_extension_to_txt(const std::string& file_path) const{
+    std::string possible_file_extensions[3] = {".png", ".jpeg", ".jpg"};
+    std::string ans;
+    for (const std::string& extension : possible_file_extensions){
+        std::size_t pos = file_path.find(extension);
+        if (pos != std::string::npos){
+            ans = file_path.substr(0, pos) + ".txt";
+            break;
+        }
+    }
+    return ans;
+}
+
 void ASCII_Render::run(){
     while(true){
         std::string file_path;
@@ -70,17 +83,4 @@ bool ASCII_Render::call_python_script(const std::string& file_path, const std::s
     // Clean up the Python environment
     Py_Finalize();
     return true;
-}
-
-std::string ASCII_Render::swap_extension_to_txt(const std::string& file_path) const{
-    std::string possible_file_extensions[3] = {".png", ".jpeg", ".jpg"};
-    std::string ans;
-    for (const std::string& extension : possible_file_extensions){
-        std::size_t pos = file_path.find(extension);
-        if (pos != std::string::npos){
-            ans = file_path.substr(0, pos) + ".txt";
-            break;
-        }
-    }
-    return ans;
 }
