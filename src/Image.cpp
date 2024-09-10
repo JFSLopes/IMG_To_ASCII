@@ -1,5 +1,6 @@
 #include "../header/Image.hpp"
 #include <iostream>
+#include <algorithm>
 
 std::istream& operator>>(std::istream& in, Pixel& p){
     if (in){
@@ -69,6 +70,22 @@ bool Image::allocate_pix_map(){
     }
 
     return true;
+}
+
+uint8_t** Image::allocate_new_grayscale(uint16_t new_w, uint16_t new_h){
+    uint8_t** new_grayscale = new uint8_t*[new_h];
+    if (new_grayscale == nullptr){
+        return nullptr;
+    }
+
+    for (uint16_t l = 0; l < new_h; l++){
+        new_grayscale[l] = new uint8_t[new_w];
+        if (new_grayscale[l] == nullptr) {
+            return nullptr;
+        }
+    }
+
+    return new_grayscale;
 }
 
 bool Image::allocate_grayscale(){
@@ -148,4 +165,70 @@ bool Image::save_grayscale(const std::string& file_path) const{
     }
     os.close();
     return true;
+}
+
+char characters[9] = {' ', '.', ':', '-', '+', '*', '$', '@', '#'};
+
+void Image::convert_grayscale_to_index(){
+    for (uint16_t l = 0; l < h; l++){
+        for (uint16_t c = 0; c < w; c++){
+            grayscale[l][c] /= 29;
+        }
+    }
+
+    resize_image(200, 100);
+
+    std::ofstream os("final.txt");
+
+    for (uint16_t l = 0; l < h; l++){
+        for (uint16_t c = 0; c < w; c++){
+            os << characters[grayscale[l][c]];      
+        }
+        os << "\n";
+    }    
+}
+
+void Image::resize_image(uint16_t new_w, uint16_t new_h){
+    uint8_t** new_grayscale = allocate_new_grayscale(new_w, new_h);
+    if (new_grayscale == nullptr){
+        std::cout << "An error happended while resizing image.\n";
+        return;
+    }
+
+    uint16_t jump_w = w / new_w;
+    uint16_t jump_h = h / new_h;
+    for (uint16_t l = 0; l < new_h; l++){
+        for (uint16_t c = 0; c < new_w; c++){
+            new_grayscale[l][c] = get_average(l * jump_h, c * jump_w, jump_w, jump_h);
+        }
+    }
+    // Free the memory before swapping pointers
+    dealocate_2d_array(grayscale, h);
+
+    grayscale = new_grayscale;
+    w = new_w;
+    h = new_h;
+}
+
+uint8_t Image::get_average(uint16_t line, uint16_t col, uint16_t width, uint16_t height) const{
+    uint16_t sum = 0;
+    uint16_t num = 0;
+    for (uint16_t l = line; l < std::min(static_cast<uint16_t>(line + height), h); l++){
+        for (uint16_t c = col; c < std::min(static_cast<uint16_t>(col + width), w); c++){
+            sum += grayscale[l][c];
+            num++;
+        }
+    }
+    if (num == 0) return 0;
+    return static_cast<uint8_t>(sum / num);
+}
+
+void Image::dealocate_2d_array(uint8_t** array, uint16_t num_lines) const{
+    if (array != nullptr){
+        for (uint16_t i = 0; i < num_lines; i++){
+            delete [] array[i];
+        }
+
+        delete [] array;
+    }
 }

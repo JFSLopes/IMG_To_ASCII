@@ -53,9 +53,9 @@ void ASCII_Render::run(){
             std::cout << "Failed to store the grayscale file into " << png_grayscale_file << "\n";
             continue;
         }
-
-
+        
         // PRINT THE IMAGE IN THE CONSOLE
+        img->convert_grayscale_to_index();
 
         // Wait until 'Enter' is pressed
         std::getline(std::cin, file_path);
