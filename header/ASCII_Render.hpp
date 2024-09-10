@@ -4,7 +4,6 @@
 #include "Image.hpp"
 #include <memory>
 
-
 class ASCII_Render{
 private:
     std::unique_ptr<Image> img;

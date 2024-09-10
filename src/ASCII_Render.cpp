@@ -1,7 +1,7 @@
 #include "../header/ASCII_Render.hpp"
 #include <iostream>
 #include <stdio.h>
-#include <Python.h>
+#include "../header/Python_Environment.hpp"
 
 std::string ASCII_Render::remove_extension(const std::string& file_path) const{
     std::string possible_file_extensions[3] = {".png", ".jpeg", ".jpg"};
@@ -17,6 +17,7 @@ std::string ASCII_Render::remove_extension(const std::string& file_path) const{
 }
 
 void ASCII_Render::run(){
+    init_python_environment();
     while(true){
         std::string file_path;
         std::cout << "Enter the file path: ";
@@ -66,13 +67,12 @@ void ASCII_Render::run(){
             break;
         }
     }
+    clean_python_environment();
 }
 
 bool ASCII_Render::call_python_script_read_png(const std::string& file_path, const std::string& output_file_path) const{
     int argc = 3;
     const char* argv[3] = {"Scripts/png_to_array.py", file_path.c_str(), output_file_path.c_str()};
-    // Initialize the Python environment
-    Py_Initialize();
 
     // Prepare the Python script arguments
     PyObject *sys_path = PySys_GetObject("path"); // Get the sys.path
@@ -95,16 +95,12 @@ bool ASCII_Render::call_python_script_read_png(const std::string& file_path, con
         return false;
     }
 
-    // Clean up the Python environment
-    Py_Finalize();
     return true;
 }
 
 bool ASCII_Render::call_python_script_save_png(const std::string& file_path, const std::string& output_file_path) const{
     int argc = 3;
     const char* argv[3] = {"Scripts/array_to_png.py", file_path.c_str(), output_file_path.c_str()};
-    // Initialize the Python environment
-    Py_Initialize();
 
     // Prepare the Python script arguments
     PyObject *sys_path = PySys_GetObject("path"); // Get the sys.path
@@ -127,7 +123,5 @@ bool ASCII_Render::call_python_script_save_png(const std::string& file_path, con
         return false;
     }
 
-    // Clean up the Python environment
-    Py_Finalize();
     return true;
 }
