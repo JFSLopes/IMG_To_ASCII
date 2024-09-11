@@ -9,6 +9,8 @@ enum Mode {PHOTO, VIDEO};
 struct Config_Mode{
     std::string file_path;
     Mode mode;
+    bool save_black_white_image;
+    bool remove_auxiliar_files;
 };
 
 class ASCII_Render{

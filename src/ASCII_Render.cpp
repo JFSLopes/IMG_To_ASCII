@@ -48,9 +48,22 @@ bool ASCII_Render::read_config_mode(){
         return false;
     }
     in >> name >> equal >> value;
+    config.file_path = value.substr(1, value.size() - 2);
+
+    // Read extra configs
+    in >> name;
+    if (name != "[Extra]"){
+        std::cout << name << "\n";
+        std::cout << "Invalid config_mode.ini file structure. Expected [Extra].\n";
+        return false;
+    }
 
     in >> name >> equal >> value;
-    config.file_path = value.substr(1, value.size() - 2);
+    config.save_black_white_image = bool(std::stoi(value));
+
+    in >> name >> equal >> value;
+    config.remove_auxiliar_files = bool(std::stoi(value));
+
     return true;
 }
 
@@ -91,7 +104,8 @@ void ASCII_Render::run(){
         }
         std::string png_grayscale_file = remove_extension(config.file_path) + "-grayscale.png";
 
-        if (!call_python_script_save_png(array_grayscale_file, png_grayscale_file)){
+        // Call script to store back and white image. Only if user set to 1
+        if (config.save_black_white_image and !call_python_script_save_png(array_grayscale_file, png_grayscale_file)){
             std::cout << "Failed to store the grayscale file into " << png_grayscale_file << "\n";
             continue;
         }
@@ -104,6 +118,9 @@ void ASCII_Render::run(){
 
         // Print the image on terminal and saves it on ascii_art.txt
         img->show_ascii_art();
+
+        // Remove the auxiliar files
+        system("rm assets/*.txt assets/*.csv assets/*-grayscale.png");
 
         std::cout << "Do you want to leave? [y/n]: ";
         std::string ans;
