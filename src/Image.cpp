@@ -22,6 +22,7 @@ std::ostream& operator<<(std::ostream& os, const Pixel& p){
 
 Image::Image(const std::string& file) : file(std::move(file)){
     read_file();
+    read_config_file();
 }
 
 Image::~Image(){
@@ -167,38 +168,38 @@ bool Image::save_grayscale(const std::string& file_path) const{
     return true;
 }
 
-char characters[9] = {' ', '.', ':', '-', '+', '*', '$', '@', '#'};
 
 void Image::convert_grayscale_to_index(){
+    uint16_t group_dim = 29;
     for (uint16_t l = 0; l < h; l++){
         for (uint16_t c = 0; c < w; c++){
-            grayscale[l][c] /= 29;
+            grayscale[l][c] /= group_dim;
         }
     }
 
-    resize_image(200, 100);
+    resize_image();
 
     std::ofstream os("final.txt");
 
     for (uint16_t l = 0; l < h; l++){
         for (uint16_t c = 0; c < w; c++){
-            os << characters[grayscale[l][c]];      
+            os << config.characters[grayscale[l][c]];      
         }
         os << "\n";
     }    
 }
 
-void Image::resize_image(uint16_t new_w, uint16_t new_h){
-    uint8_t** new_grayscale = allocate_new_grayscale(new_w, new_h);
+void Image::resize_image(){
+    uint8_t** new_grayscale = allocate_new_grayscale(config.resize_w, config.resize_h);
     if (new_grayscale == nullptr){
         std::cout << "An error happended while resizing image.\n";
         return;
     }
 
-    uint16_t jump_w = w / new_w;
-    uint16_t jump_h = h / new_h;
-    for (uint16_t l = 0; l < new_h; l++){
-        for (uint16_t c = 0; c < new_w; c++){
+    uint16_t jump_w = w / config.resize_w;
+    uint16_t jump_h = h / config.resize_h;
+    for (uint16_t l = 0; l < config.resize_h; l++){
+        for (uint16_t c = 0; c < config.resize_w; c++){
             new_grayscale[l][c] = get_average(l * jump_h, c * jump_w, jump_w, jump_h);
         }
     }
@@ -206,8 +207,8 @@ void Image::resize_image(uint16_t new_w, uint16_t new_h){
     dealocate_2d_array(grayscale, h);
 
     grayscale = new_grayscale;
-    w = new_w;
-    h = new_h;
+    w = config.resize_w;
+    h = config.resize_h;
 }
 
 uint8_t Image::get_average(uint16_t line, uint16_t col, uint16_t width, uint16_t height) const{
@@ -231,4 +232,46 @@ void Image::dealocate_2d_array(uint8_t** array, uint16_t num_lines) const{
 
         delete [] array;
     }
+}
+
+void Image::read_config_file(){
+    std::ifstream in("config.ini");
+    if (!in.is_open()){
+        std::cout << "Couldn't open file \"config.ini\"\n";
+        flag_error = true;
+        return;
+    }
+
+    std::string name, equal, value;
+    // Read resize dimensions
+    in >> name;
+    if (name != "[Settings]"){
+        std::cout << "Invalid config.ini file structure. Expected [Settings].\n";
+        flag_error = true;
+        return;
+    }
+    in >> name >> equal >> value;
+    config.resize_w = (uint16_t) std::stoi(value);
+
+    in >> name >> equal >> value;
+    config.resize_h = (uint16_t) std::stoi(value);
+
+
+    // Read characters
+    in >> name;
+    if (name != "[Characters]"){
+        std::cout << "Invalid config.ini file structure. Expected [Characters].\n";
+        flag_error = true;
+        return;
+    }
+    in >> name >> equal;
+    std::getline(in, value);
+    value = value.substr(2, value.size() - 3);
+    std::cout << "V: " << value << "\n";
+    config.num_characters = (uint16_t) value.size();
+    for (const char ch : value) config.characters.push_back(ch);
+
+    std::cout << "W: " << config.resize_w << "   H: " << config.resize_h << "    Num: " << config.num_characters << "\n";
+
+    in.close();
 }
