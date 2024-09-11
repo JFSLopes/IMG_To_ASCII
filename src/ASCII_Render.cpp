@@ -39,6 +39,7 @@ void ASCII_Render::run(){
         img = std::make_unique<Image>(output_file);
         if (img->loading_failed()){
             std::cout << "Image path invalid or image is corrupted.\n";
+            continue;
         }
 
         // Show the black and white version of the image
@@ -54,11 +55,11 @@ void ASCII_Render::run(){
             continue;
         }
         
-        // PRINT THE IMAGE IN THE CONSOLE
+        // Convert the image to a grayscale and resizes it
         img->convert_grayscale_to_index();
 
-        // Wait until 'Enter' is pressed
-        std::getline(std::cin, file_path);
+        // Print the image on terminal and saves it on ascii_art.txt
+        img->show_image();
 
         std::cout << "Do you want to leave? [y/n]: ";
         std::string ans;

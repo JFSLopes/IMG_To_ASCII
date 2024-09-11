@@ -26,15 +26,19 @@ Image::Image(const std::string& file) : file(std::move(file)){
 }
 
 Image::~Image(){
-    if (pix_map != nullptr){
-        for (uint16_t l = 0; l < w; l++){
-            delete [] pix_map[l];
+    dealocate_2d_array<Pixel>(pix_map, h);
+    dealocate_2d_array<uint8_t>(grayscale, config.resize_h);
+}
+
+template<class T>
+void Image::dealocate_2d_array(T** array, uint16_t num_lines) const{
+    if (array != nullptr){
+        for (uint16_t i = 0; i < num_lines; i++){
+            delete [] array[i];
         }
 
-        delete [] pix_map;
+        delete [] array;
     }
-
-    delete [] grayscale;
 }
 
 bool Image::read_dimensions(std::ifstream& in){
@@ -57,52 +61,31 @@ bool Image::read_pix_map(std::ifstream& in){
     return true;
 }
 
-bool Image::allocate_pix_map(){
-    pix_map = new Pixel*[h];
-    if (pix_map == nullptr) {
-        return false; 
-    }
-
-    for (uint16_t l = 0; l < h; l++){
-        pix_map[l] = new Pixel[w];
-        if (pix_map[l] == nullptr) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-uint8_t** Image::allocate_new_grayscale(uint16_t new_w, uint16_t new_h){
-    uint8_t** new_grayscale = new uint8_t*[new_h];
-    if (new_grayscale == nullptr){
+template<class T>
+T** Image::allocate_array(uint16_t lines, uint16_t cols){
+    T** array = new T*[lines];
+    if (array == nullptr){
         return nullptr;
     }
 
-    for (uint16_t l = 0; l < new_h; l++){
-        new_grayscale[l] = new uint8_t[new_w];
-        if (new_grayscale[l] == nullptr) {
+    for (uint16_t l = 0; l < lines; l++){
+        array[l] = new T[cols];
+        if (array[l] == nullptr) {
             return nullptr;
         }
     }
 
-    return new_grayscale;
+    return array;
+}
+
+bool Image::allocate_pix_map(){
+    pix_map = allocate_array<Pixel>(h, w);
+    return pix_map != nullptr;
 }
 
 bool Image::allocate_grayscale(){
-    grayscale = new uint8_t*[h];
-    if (grayscale == nullptr){
-        return false;
-    }
-
-    for (uint16_t l = 0; l < h; l++){
-        grayscale[l] = new uint8_t[w];
-        if (grayscale[l] == nullptr) {
-            return false;
-        }
-    }
-
-    return true;
+    grayscale = allocate_array<uint8_t>(h, w);
+    return grayscale != nullptr;
 }
 
 void Image::read_file(){
@@ -128,13 +111,16 @@ void Image::read_file(){
 }
 
 void Image::show_image() const{
-    std::cout << "Width: " << w << "    Heigth: " << h << "\n";
-    for (uint16_t l = 0; l < h; l++){
-        for (uint16_t c = 0; c < w; c++){
-            std::cout << (uint16_t)grayscale[l][c] << " ";
+    std::ofstream os("ascii_art.txt");
+
+    for (uint16_t l = 0; l < config.resize_h; l++){
+        for (uint16_t c = 0; c < config.resize_w; c++){
+            os << config.characters[grayscale[l][c]];
+            std::cout << config.characters[grayscale[l][c]];
         }
         std::cout << "\n";
-    }
+        os << "\n";
+    }  
 }
 
 bool Image::loading_failed() const{
@@ -178,21 +164,10 @@ void Image::convert_grayscale_to_index(){
     }
 
     resize_image();
-
-    std::ofstream os("final.txt");
-
-    for (uint16_t l = 0; l < h; l++){
-        for (uint16_t c = 0; c < w; c++){
-            os << config.characters[grayscale[l][c]];
-            std::cout << config.characters[grayscale[l][c]];
-        }
-        std::cout << "\n";
-        os << "\n";
-    }    
 }
 
 void Image::resize_image(){
-    uint8_t** new_grayscale = allocate_new_grayscale(config.resize_w, config.resize_h);
+    uint8_t** new_grayscale = allocate_array<uint8_t>(config.resize_h, config.resize_w);
     if (new_grayscale == nullptr){
         std::cout << "An error happended while resizing image.\n";
         return;
@@ -216,8 +191,6 @@ void Image::resize_image(){
     dealocate_2d_array(grayscale, h);
 
     grayscale = new_grayscale;
-    w = config.resize_w;
-    h = config.resize_h;
 }
 
 uint8_t Image::get_average(uint16_t line, uint16_t col, uint16_t width, uint16_t height) const{
@@ -231,16 +204,6 @@ uint8_t Image::get_average(uint16_t line, uint16_t col, uint16_t width, uint16_t
     }
     if (num == 0) return 0;
     return static_cast<uint8_t>(sum / num);
-}
-
-void Image::dealocate_2d_array(uint8_t** array, uint16_t num_lines) const{
-    if (array != nullptr){
-        for (uint16_t i = 0; i < num_lines; i++){
-            delete [] array[i];
-        }
-
-        delete [] array;
-    }
 }
 
 void Image::read_config_file(){
