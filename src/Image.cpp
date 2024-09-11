@@ -1,5 +1,6 @@
 #include "../header/Image.hpp"
 #include <iostream>
+#include <algorithm>
 
 std::istream& operator>>(std::istream& in, Pixel& p){
     if (in){
@@ -21,18 +22,23 @@ std::ostream& operator<<(std::ostream& os, const Pixel& p){
 
 Image::Image(const std::string& file) : file(std::move(file)){
     read_file();
+    read_config_file();
 }
 
 Image::~Image(){
-    if (pix_map != nullptr){
-        for (uint16_t l = 0; l < w; l++){
-            delete [] pix_map[l];
+    dealocate_2d_array<Pixel>(pix_map, h);
+    dealocate_2d_array<uint8_t>(grayscale, config.resize_h);
+}
+
+template<class T>
+void Image::dealocate_2d_array(T** array, uint16_t num_lines) const{
+    if (array != nullptr){
+        for (uint16_t i = 0; i < num_lines; i++){
+            delete [] array[i];
         }
 
-        delete [] pix_map;
+        delete [] array;
     }
-
-    delete [] grayscale;
 }
 
 bool Image::read_dimensions(std::ifstream& in){
@@ -55,36 +61,31 @@ bool Image::read_pix_map(std::ifstream& in){
     return true;
 }
 
-bool Image::allocate_pix_map(){
-    pix_map = new Pixel*[h];
-    if (pix_map == nullptr) {
-        return false; 
+template<class T>
+T** Image::allocate_array(uint16_t lines, uint16_t cols){
+    T** array = new T*[lines];
+    if (array == nullptr){
+        return nullptr;
     }
 
-    for (uint16_t l = 0; l < h; l++){
-        pix_map[l] = new Pixel[w];
-        if (pix_map[l] == nullptr) {
-            return false;
+    for (uint16_t l = 0; l < lines; l++){
+        array[l] = new T[cols];
+        if (array[l] == nullptr) {
+            return nullptr;
         }
     }
 
-    return true;
+    return array;
+}
+
+bool Image::allocate_pix_map(){
+    pix_map = allocate_array<Pixel>(h, w);
+    return pix_map != nullptr;
 }
 
 bool Image::allocate_grayscale(){
-    grayscale = new uint8_t*[h];
-    if (grayscale == nullptr){
-        return false;
-    }
-
-    for (uint16_t l = 0; l < h; l++){
-        grayscale[l] = new uint8_t[w];
-        if (grayscale[l] == nullptr) {
-            return false;
-        }
-    }
-
-    return true;
+    grayscale = allocate_array<uint8_t>(h, w);
+    return grayscale != nullptr;
 }
 
 void Image::read_file(){
@@ -110,13 +111,16 @@ void Image::read_file(){
 }
 
 void Image::show_image() const{
-    std::cout << "Width: " << w << "    Heigth: " << h << "\n";
-    for (uint16_t l = 0; l < h; l++){
-        for (uint16_t c = 0; c < w; c++){
-            std::cout << (uint16_t)grayscale[l][c] << " ";
+    std::ofstream os("ascii_art.txt");
+
+    for (uint16_t l = 0; l < config.resize_h; l++){
+        for (uint16_t c = 0; c < config.resize_w; c++){
+            os << config.characters[grayscale[l][c]];
+            std::cout << config.characters[grayscale[l][c]];
         }
         std::cout << "\n";
-    }
+        os << "\n";
+    }  
 }
 
 bool Image::loading_failed() const{
@@ -148,4 +152,98 @@ bool Image::save_grayscale(const std::string& file_path) const{
     }
     os.close();
     return true;
+}
+
+
+void Image::convert_grayscale_to_index(){
+    uint16_t group_dim = 29;
+    for (uint16_t l = 0; l < h; l++){
+        for (uint16_t c = 0; c < w; c++){
+            grayscale[l][c] /= group_dim;
+        }
+    }
+
+    resize_image();
+}
+
+void Image::resize_image(){
+    uint8_t** new_grayscale = allocate_array<uint8_t>(config.resize_h, config.resize_w);
+    if (new_grayscale == nullptr){
+        std::cout << "An error happended while resizing image.\n";
+        return;
+    }
+
+    for (uint16_t l = 0; l < config.resize_h; l++) {
+        // Calculate the vertical range in the original image
+        uint16_t orig_line_start = l * h / config.resize_h;
+        uint16_t orig_line_end = (l + 1) * h / config.resize_h;
+
+        for (uint16_t c = 0; c < config.resize_w; c++) {
+            // Calculate the horizontal range in the original image
+            uint16_t orig_col_start = c * w / config.resize_w;
+            uint16_t orig_col_end = (c + 1) * w / config.resize_w;
+
+            // Compute the average in the range
+            new_grayscale[l][c] = get_average(orig_line_start, orig_col_start, orig_col_end - orig_col_start, orig_line_end - orig_line_start);
+        }
+    }
+    // Free the memory before swapping pointers
+    dealocate_2d_array(grayscale, h);
+
+    grayscale = new_grayscale;
+}
+
+uint8_t Image::get_average(uint16_t line, uint16_t col, uint16_t width, uint16_t height) const{
+    uint16_t sum = 0;
+    uint16_t num = 0;
+    for (uint16_t l = line; l < std::min(static_cast<uint16_t>(line + height), h); l++){
+        for (uint16_t c = col; c < std::min(static_cast<uint16_t>(col + width), w); c++){
+            sum += grayscale[l][c];
+            num++;
+        }
+    }
+    if (num == 0) return 0;
+    return static_cast<uint8_t>(sum / num);
+}
+
+void Image::read_config_file(){
+    std::ifstream in("config.ini");
+    if (!in.is_open()){
+        std::cout << "Couldn't open file \"config.ini\"\n";
+        flag_error = true;
+        return;
+    }
+
+    std::string name, equal, value;
+    // Read resize dimensions
+    in >> name;
+    if (name != "[Settings]"){
+        std::cout << "Invalid config.ini file structure. Expected [Settings].\n";
+        flag_error = true;
+        return;
+    }
+    in >> name >> equal >> value;
+    config.resize_w = (uint16_t) std::stoi(value);
+
+    in >> name >> equal >> value;
+    config.resize_h = (uint16_t) std::stoi(value);
+
+
+    // Read characters
+    in >> name;
+    if (name != "[Characters]"){
+        std::cout << "Invalid config.ini file structure. Expected [Characters].\n";
+        flag_error = true;
+        return;
+    }
+    in >> name >> equal;
+    std::getline(in, value);
+    value = value.substr(2, value.size() - 3);
+    std::cout << "V: " << value << "\n";
+    config.num_characters = (uint16_t) value.size();
+    for (const char ch : value) config.characters.push_back(ch);
+
+    std::cout << "W: " << config.resize_w << "   H: " << config.resize_h << "    Num: " << config.num_characters << "\n";
+
+    in.close();
 }

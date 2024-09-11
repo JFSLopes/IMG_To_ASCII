@@ -3,3 +3,4 @@ prog
 *.txt
 prog.dSYM
 *.csv
+*-grayscale.png
