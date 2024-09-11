@@ -21,7 +21,7 @@ struct Pixel{
  * This structure contains settings such as the desired resized dimensions for the image,
  * the number of characters to use in the ASCII art, and the list of characters for ASCII representation.
  */
-struct Config{
+struct Config_Output{
     uint16_t resize_w;            /**< Desired width of the resized image. */
     uint16_t resize_h;            /**< Desired height of the resized image. */
     uint16_t num_characters;      /**< Number of characters to use for ASCII art. */
@@ -40,8 +40,7 @@ private:
     uint8_t** grayscale;      /**< 2D array representing the grayscale version of the image. Each pixel is a value from 0 (black) to 255 (white). */
     uint16_t w;               /**< Image width in pixels. */
     uint16_t h;               /**< Image height in pixels. */
-    std::string file;         /**< File path of the image. */
-    Config config;            /**< Configuration settings for image resizing and ASCII generation. */
+    Config_Output config;     /**< Configuration settings for image resizing and ASCII generation. */
     bool flag_error = false;  /**< Flag to indicate if an error occurred during config or pixel map loading. */
 
     /**
@@ -57,12 +56,12 @@ private:
     /**
      * This function commands how the pixmap file is read and, in case of an error, sets flag_error to true.
      */
-    void read_file();
+    void read_file(const std::string& file);
 
     /**
      * This function reads the config related to the resize of the image from the config.ini
      */
-    void read_config_file();
+    void read_config_file(const std::string& file);
 
     /**
      * Allocates memory for a 2D array of the given dimensions (lines x columns).

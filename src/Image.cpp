@@ -20,9 +20,9 @@ std::ostream& operator<<(std::ostream& os, const Pixel& p){
     return os;
 }
 
-Image::Image(const std::string& file) : file(std::move(file)){
-    read_file();
-    read_config_file();
+Image::Image(const std::string& file){
+    read_file(file);
+    read_config_file(file);
 }
 
 Image::~Image(){
@@ -88,7 +88,7 @@ bool Image::allocate_grayscale(){
     return grayscale != nullptr;
 }
 
-void Image::read_file(){
+void Image::read_file(const std::string& file){
     std::ifstream in(file);
 
     if (!in.is_open()){
@@ -206,8 +206,8 @@ uint8_t Image::get_average(uint16_t line, uint16_t col, uint16_t width, uint16_t
     return static_cast<uint8_t>(sum / num);
 }
 
-void Image::read_config_file(){
-    std::ifstream in("config.ini");
+void Image::read_config_file(const std::string& file){
+    std::ifstream in("config_output.ini");
     if (!in.is_open()){
         std::cout << "Couldn't open file \"config.ini\"\n";
         flag_error = true;
