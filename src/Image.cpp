@@ -183,8 +183,10 @@ void Image::convert_grayscale_to_index(){
 
     for (uint16_t l = 0; l < h; l++){
         for (uint16_t c = 0; c < w; c++){
-            os << config.characters[grayscale[l][c]];      
+            os << config.characters[grayscale[l][c]];
+            std::cout << config.characters[grayscale[l][c]];
         }
+        std::cout << "\n";
         os << "\n";
     }    
 }
@@ -196,11 +198,18 @@ void Image::resize_image(){
         return;
     }
 
-    uint16_t jump_w = w / config.resize_w;
-    uint16_t jump_h = h / config.resize_h;
-    for (uint16_t l = 0; l < config.resize_h; l++){
-        for (uint16_t c = 0; c < config.resize_w; c++){
-            new_grayscale[l][c] = get_average(l * jump_h, c * jump_w, jump_w, jump_h);
+    for (uint16_t l = 0; l < config.resize_h; l++) {
+        // Calculate the vertical range in the original image
+        uint16_t orig_line_start = l * h / config.resize_h;
+        uint16_t orig_line_end = (l + 1) * h / config.resize_h;
+
+        for (uint16_t c = 0; c < config.resize_w; c++) {
+            // Calculate the horizontal range in the original image
+            uint16_t orig_col_start = c * w / config.resize_w;
+            uint16_t orig_col_end = (c + 1) * w / config.resize_w;
+
+            // Compute the average in the range
+            new_grayscale[l][c] = get_average(orig_line_start, orig_col_start, orig_col_end - orig_col_start, orig_line_end - orig_line_start);
         }
     }
     // Free the memory before swapping pointers
