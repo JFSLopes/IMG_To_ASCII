@@ -26,12 +26,12 @@ Image::Image(const std::string& file) : file(std::move(file)){
 }
 
 Image::~Image(){
-    dealocate_2d_array<Pixel>(pix_map, h);
-    dealocate_2d_array<uint8_t>(grayscale, config.resize_h);
+    deallocate_2d_array<Pixel>(pix_map, h);
+    deallocate_2d_array<uint8_t>(grayscale, config.resize_h);
 }
 
 template<class T>
-void Image::dealocate_2d_array(T** array, uint16_t num_lines) const{
+void Image::deallocate_2d_array(T** array, uint16_t num_lines) const{
     if (array != nullptr){
         for (uint16_t i = 0; i < num_lines; i++){
             delete [] array[i];
@@ -110,7 +110,7 @@ void Image::read_file(){
     in.close();
 }
 
-void Image::show_image() const{
+void Image::show_ascii_art() const{
     std::ofstream os("ascii_art.txt");
 
     for (uint16_t l = 0; l < config.resize_h; l++){
@@ -188,7 +188,7 @@ void Image::resize_image(){
         }
     }
     // Free the memory before swapping pointers
-    dealocate_2d_array(grayscale, h);
+    deallocate_2d_array(grayscale, h);
 
     grayscale = new_grayscale;
 }
@@ -238,12 +238,10 @@ void Image::read_config_file(){
     }
     in >> name >> equal;
     std::getline(in, value);
+
     value = value.substr(2, value.size() - 3);
-    std::cout << "V: " << value << "\n";
     config.num_characters = (uint16_t) value.size();
     for (const char ch : value) config.characters.push_back(ch);
-
-    std::cout << "W: " << config.resize_w << "   H: " << config.resize_h << "    Num: " << config.num_characters << "\n";
 
     in.close();
 }

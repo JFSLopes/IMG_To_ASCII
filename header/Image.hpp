@@ -8,56 +8,129 @@
 #include <istream>
 #include <ostream>
 
+/**
+ * This structure holds the red, green, and blue (RGB) components of a pixel.
+ */
 struct Pixel{
-    uint8_t r;
-    uint8_t g;
-    uint8_t b;
+    uint8_t r; /**< Red channel (0-255). */
+    uint8_t g; /**< Green channel (0-255). */
+    uint8_t b; /**< Blue channel (0-255). */
 };
 
+/**
+ * This structure contains settings such as the desired resized dimensions for the image,
+ * the number of characters to use in the ASCII art, and the list of characters for ASCII representation.
+ */
 struct Config{
-    uint16_t resize_w;
-    uint16_t resize_h;
-    uint16_t num_characters;
-    std::vector<char> characters;
+    uint16_t resize_w;            /**< Desired width of the resized image. */
+    uint16_t resize_h;            /**< Desired height of the resized image. */
+    uint16_t num_characters;      /**< Number of characters to use for ASCII art. */
+    std::vector<char> characters; /**< A list of characters ordered by intensity for ASCII art. */
 };
 
+/**
+ * This function reads the red, green, and blue (RGB) values of a Pixel from an input stream.
+ * It expects the RGB values to be provided in a specific format (space-separated values).
+ */
 std::istream& operator>>(std::istream& in, Pixel& p);
-std::ostream& operator<<(std::ostream& os, const Pixel& p);
 
 class Image{
 private:
-    Pixel** pix_map;
-    uint8_t** grayscale; // One byte pixel represent how much white does a image have (0-255)
-    uint16_t w;
-    uint16_t h;
-    std::string file;
-    Config config;
-    bool flag_error = false;
+    Pixel** pix_map;          /**< 2D array of Pixels representing the RGB image data. */
+    uint8_t** grayscale;      /**< 2D array representing the grayscale version of the image. Each pixel is a value from 0 (black) to 255 (white). */
+    uint16_t w;               /**< Image width in pixels. */
+    uint16_t h;               /**< Image height in pixels. */
+    std::string file;         /**< File path of the image. */
+    Config config;            /**< Configuration settings for image resizing and ASCII generation. */
+    bool flag_error = false;  /**< Flag to indicate if an error occurred during config or pixel map loading. */
 
+    /**
+     * This function reads the dimensions from the pixmap file
+     */
     bool read_dimensions(std::ifstream& in);
+
+    /**
+     * This function reads the pixels from the pixmap file
+     */
     bool read_pix_map(std::ifstream& in);
+
+    /**
+     * This function commands how the pixmap file is read and, in case of an error, sets flag_error to true.
+     */
     void read_file();
+
+    /**
+     * This function reads the config related to the resize of the image from the config.ini
+     */
     void read_config_file();
+
+    /**
+     * Allocates memory for a 2D array of the given dimensions (lines x columns).
+     */
 
     template<class T>
     T** allocate_array(uint16_t lines, uint16_t cols);
+    /**
+     * Allocates memory for the 2D array of Pixels based on the current image dimensions.
+     */
     bool allocate_pix_map();
+
+    /**
+     * Allocates memory for the 2D array of grayscale values (uint8_t) based on the current image dimensions.
+     */
     bool allocate_grayscale();
 
+    /**
+     * Converts the RGB image data (pix_map) to grayscale (grayscale array) using the NTSC standard:
+     * grayscale = 0.299 * R + 0.587 * G + 0.114 * B.
+     */
     void make_image_grayscale_NTSC();
+
+    /**
+     * Resizes the grayscale version of the image to match the width and height specified in the `config` object.
+     * The resize is done by averaging pixel blocks based on the new dimensions.
+     */
     void resize_image();
 
+    /**
+     * Computes the average grayscale value of a rectangular region within the image, defined by
+     * the starting line, column, width, and height.
+     */
     uint8_t get_average(uint16_t line, uint16_t col, uint16_t w, uint16_t h) const;
+
+    /**
+     * Frees the memory allocated for a 2D array of type T. This function ensures that all rows
+     * and the array itself are properly deallocated.
+     */
     template<class T>
-    void dealocate_2d_array(T** array, uint16_t num_lines) const;
+    void deallocate_2d_array(T** array, uint16_t num_lines) const;
+
 
 public:
     Image(const std::string& file);
     ~Image();
 
+    /**
+     * This function returns `true` if the image loading or configuration reading failed, 
+     * as indicated by the `flag_error`. Otherwise, it returns `false`.
+     */
     bool loading_failed() const;
-    void show_image() const;
+
+    /**
+     * This function outputs ascii art to the console and to a .txt file called ascii_art_txt.
+     */
+    void show_ascii_art() const;
+
+    /**
+     * This function writes the grayscale pixel data to a specified file path in a suitable format (CSV),
+     * one row per line
+     */
     bool save_grayscale(const std::string& file_path) const;
+
+    /**
+     * This function converts the grayscale values in the image to corresponding index values,
+     * mapping them to ASCII characters based on their intensity.
+     */
     void convert_grayscale_to_index();
 };
 

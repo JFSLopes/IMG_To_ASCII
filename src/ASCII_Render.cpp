@@ -59,7 +59,7 @@ void ASCII_Render::run(){
         img->convert_grayscale_to_index();
 
         // Print the image on terminal and saves it on ascii_art.txt
-        img->show_image();
+        img->show_ascii_art();
 
         std::cout << "Do you want to leave? [y/n]: ";
         std::string ans;
