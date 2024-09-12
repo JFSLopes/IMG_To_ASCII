@@ -64,52 +64,130 @@ bool ASCII_Render::read_config_mode(){
     in >> name >> equal >> value;
     config.remove_auxiliar_files = bool(std::stoi(value));
 
+
+    // Read FPS
+    in >> name;
+    if (name != "[FPS]"){
+        std::cout << "Invalid config.ini file structure. Expected [FPS].\n";
+        return false;
+    }
+    in >> name >> equal >> value;
+    config.fps = std::stoi(value);
+
     return true;
 }
 
 void ASCII_Render::run(){
     init_python_environment();
 
-    while(true){
+    while (true){
         // Read the config
+        std::cout << "1\n";
         if (!read_config_mode()){
             std::cout << "Check if there is a file config_mode.ini in the project root and if it is valid.\n";
             break;
         }
-
-        std::string output_file = remove_extension(config.file_path);
-        if (output_file.empty()){
-            std::cout << "Image file as an invalid extension.\n";
-            continue;
-        } else {
-            output_file += ".txt";
+        if (config.mode == PHOTO){
+            if (!run_for_photo()){
+                break;
+            }
+        }
+        else if (config.mode == VIDEO){
+            std::cout << "2\n";
+            if (!run_for_video()){
+                break;
+            }
         }
 
-        // Call the script that reads the image
-        if (!call_python_script_read_png(config.file_path, output_file)){
-            continue;
+        std::cout << "Do you want to leave? [y/n]: ";
+        std::string ans;
+        std::cin >> ans;
+        if (ans == "y"){
+            break;
+        }
+    }
+    
+    clean_python_environment();
+}
+
+bool ASCII_Render::run_for_photo(){
+    std::string output_file = remove_extension(config.file_path);
+    if (output_file.empty()){
+        std::cout << "Image file as an invalid extension.\n";
+        return false;
+    } else {
+        output_file += ".txt";
+    }
+
+    // Call the script that reads the image
+    if (!call_python_script_read_png(config.file_path, output_file)){
+        return false;
+    }
+
+    img = std::make_unique<Image>(output_file, true);
+    if (img->loading_failed()){
+        std::cout << "Image path invalid or image is corrupted.\n";
+        return false;
+    }
+
+    // Show the black and white version of the image
+    std::string array_grayscale_file = remove_extension(config.file_path) + ".csv";
+    if (!img->save_grayscale(array_grayscale_file)){
+        std::cout << "Failed to open " << array_grayscale_file << "\n";
+        return false;
+    }
+    std::string png_grayscale_file = remove_extension(config.file_path) + "-grayscale.png";
+
+    // Call script to store black and white image. Only if user set to 1
+    if (config.save_black_white_image and !call_python_script_save_png(array_grayscale_file, png_grayscale_file)){
+        std::cout << "Failed to store the grayscale file into " << png_grayscale_file << "\n";
+        return false;
+    }
+    
+    // Convert the image to a grayscale and resizes it
+    img->convert_grayscale_to_index();
+
+    // Clear the terminal
+    system("clear");
+
+    // Print the image on terminal and saves it on ascii_art.txt
+    img->show_ascii_art();
+
+    // Remove the auxiliar files
+    system("rm assets/*.txt assets/*.csv assets/*-grayscale.png");
+
+    return true;
+}
+
+bool ASCII_Render::run_for_video(){
+    cv::VideoCapture cap(config.file_path);
+    
+    if (!cap.isOpened()) {
+        std::cerr << "Error: Could not open video file.\n";
+        return false;
+    }
+
+    int frame_duration = 1000 / config.fps;
+
+    cv::Mat frame;
+    while (true) {
+        bool success = cap.read(frame);
+        if (!success) {
+            std::cout << "Reached the end of the video.\n";
+            break;
         }
 
-        img = std::make_unique<Image>(output_file);
-        if (img->loading_failed()){
-            std::cout << "Image path invalid or image is corrupted.\n";
-            continue;
-        }
-
-        // Show the black and white version of the image
-        std::string array_grayscale_file = remove_extension(config.file_path) + ".csv";
+        // Convert and display the current frame as ASCII art
+        img = std::make_unique<Image>(config.file_path, false);
+        img->store_video_dimensions(frame);
+        img->store_opencv_array_pix_map(frame);
+        
+        std::string array_grayscale_file = "/Users/joselopes/Desktop/IMG_To_ASCII/assets/video.csv";
         if (!img->save_grayscale(array_grayscale_file)){
             std::cout << "Failed to open " << array_grayscale_file << "\n";
-            continue;
+            return false;
         }
-        std::string png_grayscale_file = remove_extension(config.file_path) + "-grayscale.png";
 
-        // Call script to store back and white image. Only if user set to 1
-        if (config.save_black_white_image and !call_python_script_save_png(array_grayscale_file, png_grayscale_file)){
-            std::cout << "Failed to store the grayscale file into " << png_grayscale_file << "\n";
-            continue;
-        }
-        
         // Convert the image to a grayscale and resizes it
         img->convert_grayscale_to_index();
 
@@ -119,17 +197,14 @@ void ASCII_Render::run(){
         // Print the image on terminal and saves it on ascii_art.txt
         img->show_ascii_art();
 
-        // Remove the auxiliar files
-        system("rm assets/*.txt assets/*.csv assets/*-grayscale.png");
-
-        std::cout << "Do you want to leave? [y/n]: ";
-        std::string ans;
-        std::cin >> ans;
-        if (ans == "y"){
+        // Wait for the next frame based on the fps
+        if (cv::waitKey(frame_duration) == 'q') {
             break;
         }
     }
-    clean_python_environment();
+
+    cap.release();
+    return true;
 }
 
 bool ASCII_Render::call_python_script_read_png(const std::string& file_path, const std::string& output_file_path) const{

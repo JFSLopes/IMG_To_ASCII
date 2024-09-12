@@ -1,6 +1,7 @@
 #include "../header/Image.hpp"
 #include <iostream>
 #include <algorithm>
+#include <opencv2/opencv.hpp>
 
 std::istream& operator>>(std::istream& in, Pixel& p){
     if (in){
@@ -20,9 +21,9 @@ std::ostream& operator<<(std::ostream& os, const Pixel& p){
     return os;
 }
 
-Image::Image(const std::string& file){
-    read_file(file);
+Image::Image(const std::string& file, bool is_photo){
     read_config_file(file);
+    if (is_photo) read_file(file);
 }
 
 Image::~Image(){
@@ -136,6 +137,10 @@ void Image::make_image_grayscale_NTSC(){
     }
 }
 
+uint8_t Image::rgb_to_grayscale(uint8_t r, uint8_t g, uint8_t b) const{
+    return static_cast<uint8_t>(0.2989 * r + 0.5870 * g + 0.1140 * b);
+}
+
 bool Image::save_grayscale(const std::string& file_path) const{
     std::ofstream os(file_path);
 
@@ -156,6 +161,7 @@ bool Image::save_grayscale(const std::string& file_path) const{
 
 
 void Image::convert_grayscale_to_index(){
+    //uint16_t group_dim = static_cast<uint16_t>((255.0 / config.num_characters) + 0.5);
     uint16_t group_dim = 29;
     for (uint16_t l = 0; l < h; l++){
         for (uint16_t c = 0; c < w; c++){
@@ -244,4 +250,30 @@ void Image::read_config_file(const std::string& file){
     for (const char ch : value) config.characters.push_back(ch);
 
     in.close();
+}
+
+void Image::store_video_dimensions(const cv::Mat& frame){
+    w = static_cast<uint16_t>(frame.cols);
+    h = static_cast<uint16_t>(frame.rows);
+}
+
+void Image::store_opencv_array_pix_map(const cv::Mat& frame){
+    // Allocate memory for the Pixel** array and grayscale
+    allocate_pix_map();
+    allocate_grayscale();
+
+    // Loop through the frame and store the RGB values into pix_map
+    for (uint16_t l = 0; l < h; l++) {
+        for (uint16_t c = 0; c < w; c++) {
+            // OpenCV uses BGR format, so we need to extract B, G, R from the frame
+            cv::Vec3b pixel = frame.at<cv::Vec3b>(l, c);
+
+            pix_map[l][c].r = pixel[2];  // Red
+            pix_map[l][c].g = pixel[1];  // Green
+            pix_map[l][c].b = pixel[0];  // Blue
+        }
+    }
+
+    // Store the grayscale after loading frame
+    make_image_grayscale_NTSC();
 }

@@ -1,7 +1,8 @@
 # Compiler and flags
 CXX = g++
-CXXFLAGS = -std=c++17 $(shell python3.11-config --cflags)
-LDFLAGS = $(shell python3.11-config --ldflags) -lpython3.11
+CXXFLAGS = -std=c++17 $(shell python3.11-config --cflags) $(shell pkg-config --cflags opencv4)
+LDFLAGS = $(shell python3.11-config --ldflags) $(shell pkg-config --libs opencv4) -lpython3.11
+
 
 # Directories
 SRC_DIR = src

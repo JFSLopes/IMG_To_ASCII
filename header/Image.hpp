@@ -7,6 +7,8 @@
 #include <fstream>
 #include <istream>
 #include <ostream>
+#include <opencv2/opencv.hpp>
+#include <iostream>
 
 /**
  * This structure holds the red, green, and blue (RGB) components of a pixel.
@@ -86,6 +88,12 @@ private:
     void make_image_grayscale_NTSC();
 
     /**
+     * Converts a RGB pixel to grayscale value using the NTSC standard:
+     * grayscale = 0.299 * R + 0.587 * G + 0.114 * B.
+     */
+    uint8_t rgb_to_grayscale(uint8_t r, uint8_t g, uint8_t b) const;
+
+    /**
      * Resizes the grayscale version of the image to match the width and height specified in the `config` object.
      * The resize is done by averaging pixel blocks based on the new dimensions.
      */
@@ -106,7 +114,7 @@ private:
 
 
 public:
-    Image(const std::string& file);
+    Image(const std::string& file, bool is_photo);
     ~Image();
 
     /**
@@ -131,6 +139,20 @@ public:
      * mapping them to ASCII characters based on their intensity.
      */
     void convert_grayscale_to_index();
+
+    /**
+     * This function takes an OpenCV Mat (RGB frame), extracts its pixel data,
+     * and stores the RGB values into the Image class's pix_map (Pixel**) array. It also 
+     * converts the RGB values into grayscale.
+     */
+    void store_opencv_array_pix_map(const cv::Mat& frame);
+
+    /**
+     * This function updates the dimensions (w and h) of the Image object based on 
+     * the width and height of the provided OpenCV Mat. It ensures that subsequent 
+     * operations on the Image object use the correct dimensions.
+     */
+    void store_video_dimensions(const cv::Mat& frame);
 };
 
 #endif
