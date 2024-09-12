@@ -161,11 +161,10 @@ bool Image::save_grayscale(const std::string& file_path) const{
 
 
 void Image::convert_grayscale_to_index(){
-    //uint16_t group_dim = static_cast<uint16_t>((255.0 / config.num_characters) + 0.5);
-    uint16_t group_dim = 29;
     for (uint16_t l = 0; l < h; l++){
         for (uint16_t c = 0; c < w; c++){
-            grayscale[l][c] /= group_dim;
+            uint16_t index = static_cast<uint16_t>((grayscale[l][c] * config.num_characters) / 256.0);
+            grayscale[l][c] = index;
         }
     }
 
@@ -248,6 +247,12 @@ void Image::read_config_file(const std::string& file){
     value = value.substr(2, value.size() - 3);
     config.num_characters = (uint16_t) value.size();
     for (const char ch : value) config.characters.push_back(ch);
+
+    if (config.resize_w > w or config.resize_h > h){
+        std::cout << "Invalid resize dimensions. Dimension are bigger than original image dimensions.\n";
+        flag_error = true;
+        return;
+    }
 
     in.close();
 }
