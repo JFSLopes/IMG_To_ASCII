@@ -179,14 +179,12 @@ bool ASCII_Render::run_for_video(){
 
         // Convert and display the current frame as ASCII art
         img = std::make_unique<Image>(config.file_path, false);
+
+        // Adjust dimensions 
         img->store_video_dimensions(frame);
+
+        // Convert the frame to a 2D array of Pixel
         img->store_opencv_array_pix_map(frame);
-        
-        std::string array_grayscale_file = "/Users/joselopes/Desktop/IMG_To_ASCII/assets/video.csv";
-        if (!img->save_grayscale(array_grayscale_file)){
-            std::cout << "Failed to open " << array_grayscale_file << "\n";
-            return false;
-        }
 
         // Convert the image to a grayscale and resizes it
         img->convert_grayscale_to_index();

@@ -137,10 +137,6 @@ void Image::make_image_grayscale_NTSC(){
     }
 }
 
-uint8_t Image::rgb_to_grayscale(uint8_t r, uint8_t g, uint8_t b) const{
-    return static_cast<uint8_t>(0.2989 * r + 0.5870 * g + 0.1140 * b);
-}
-
 bool Image::save_grayscale(const std::string& file_path) const{
     std::ofstream os(file_path);
 

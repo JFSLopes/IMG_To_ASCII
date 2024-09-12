@@ -88,12 +88,6 @@ private:
     void make_image_grayscale_NTSC();
 
     /**
-     * Converts a RGB pixel to grayscale value using the NTSC standard:
-     * grayscale = 0.299 * R + 0.587 * G + 0.114 * B.
-     */
-    uint8_t rgb_to_grayscale(uint8_t r, uint8_t g, uint8_t b) const;
-
-    /**
      * Resizes the grayscale version of the image to match the width and height specified in the `config` object.
      * The resize is done by averaging pixel blocks based on the new dimensions.
      */
