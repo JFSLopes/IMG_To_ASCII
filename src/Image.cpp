@@ -24,6 +24,11 @@ std::ostream& operator<<(std::ostream& os, const Pixel& p){
 Image::Image(const std::string& file, bool is_photo){
     read_config_file(file);
     if (is_photo) read_file(file);
+
+    if (config.resize_w > w or config.resize_h > h){
+        std::cout << "Invalid resize dimensions. Dimension are bigger than original image dimensions.\n";
+        flag_error = true;
+    }
 }
 
 Image::~Image(){
@@ -243,12 +248,6 @@ void Image::read_config_file(const std::string& file){
     value = value.substr(2, value.size() - 3);
     config.num_characters = (uint16_t) value.size();
     for (const char ch : value) config.characters.push_back(ch);
-
-    if (config.resize_w > w or config.resize_h > h){
-        std::cout << "Invalid resize dimensions. Dimension are bigger than original image dimensions.\n";
-        flag_error = true;
-        return;
-    }
 
     in.close();
 }

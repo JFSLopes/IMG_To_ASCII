@@ -82,7 +82,6 @@ void ASCII_Render::run(){
 
     while (true){
         // Read the config
-        std::cout << "1\n";
         if (!read_config_mode()){
             std::cout << "Check if there is a file config_mode.ini in the project root and if it is valid.\n";
             break;
@@ -154,7 +153,9 @@ bool ASCII_Render::run_for_photo(){
     img->show_ascii_art();
 
     // Remove the auxiliar files
-    system("rm assets/*.txt assets/*.csv assets/*-grayscale.png");
+    if (config.remove_auxiliar_files){
+        system("rm assets/*.txt assets/*.csv assets/*-grayscale.png");
+    }
 
     return true;
 }
